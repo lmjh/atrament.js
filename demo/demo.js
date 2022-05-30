@@ -48,6 +48,8 @@ atrament.addEventListener('strokerecorded', ({ stroke }) => {
   log(`event: strokerecorded - ${stroke.points.length} points`);
 });
 
+atrament.addEventListener('colorpicked', (e) => log('event: colorpicked ' + e.color));
+
 // utility to add delay to drawing steps
 const sleep = async time => new Promise((r) => setTimeout(r, time));
 

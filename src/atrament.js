@@ -7,7 +7,8 @@ const DrawingMode = {
   DRAW: 'draw',
   ERASE: 'erase',
   FILL: 'fill',
-  DISABLED: 'disabled'
+  DISABLED: 'disabled',
+  PICKER: 'picker'
 };
 
 const PathDrawingModes = [DrawingMode.DRAW, DrawingMode.ERASE];
@@ -76,6 +77,12 @@ module.exports = class Atrament extends AtramentEventTarget {
       }
       // update position just in case
       mouseMove(event);
+
+      // if colour picker is selected - run picker function and return
+      if (this.mode === DrawingMode.PICKER) {
+        this.picker();
+        return;
+      }
 
       // if we are filling - fill and return
       if (this.mode === DrawingMode.FILL) {
@@ -306,6 +313,9 @@ module.exports = class Atrament extends AtramentEventTarget {
       case DrawingMode.DISABLED:
         this._mode = DrawingMode.DISABLED;
         break;
+      case DrawingMode.PICKER:
+        this._mode = DrawingMode.PICKER;
+        break;
       default:
         this._mode = DrawingMode.DRAW;
         this.context.globalCompositeOperation = 'source-over';
@@ -342,6 +352,17 @@ module.exports = class Atrament extends AtramentEventTarget {
 
   toImage() {
     return this.canvas.toDataURL();
+  }
+
+  picker() {
+    const { mouse } = this;
+    const { context } = this;
+    // find the colour at the mouse's position and convert to a string in rgba() format
+    const pickerColor = `rgba(${context.getImageData(mouse.x, mouse.y, 1, 1).data.toString()})`;
+    // set current color to picked color
+    this.color = pickerColor;
+    // dispatch an event containing the selected color
+    this.dispatchEvent('colorpicked', { color: pickerColor });
   }
 
   fill() {
