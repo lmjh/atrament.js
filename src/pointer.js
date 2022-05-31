@@ -11,8 +11,8 @@ class Point {
   }
 }
 
-// make a class for the mouse data
-class Mouse extends Point {
+// make a class for the pointer data
+class Pointer extends Point {
   constructor() {
     super(0, 0);
     this.down = false;
@@ -20,4 +20,4 @@ class Mouse extends Point {
   }
 }
 
-module.exports = { Mouse, Point };
+module.exports = { Pointer, Point };

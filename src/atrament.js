@@ -1,4 +1,4 @@
-const { Mouse, Point } = require('./mouse.js');
+const { Pointer, Point } = require('./pointer.js');
 const Constants = require('./constants.js');
 const { AtramentEventTarget } = require('./events.js');
 const Pixels = require('./pixels.js');
@@ -31,52 +31,44 @@ module.exports = class Atrament extends AtramentEventTarget {
     this.canvas.width = config.width || this.canvas.width;
     this.canvas.height = config.height || this.canvas.height;
 
-    // create a mouse object
-    this.mouse = new Mouse();
+    // create a pointer object
+    this.pointer = new Pointer();
 
-    // mousemove handler
-    const mouseMove = (event) => {
+    // pointermove handler
+    const pointerMove = (event) => {
       if (event.cancelable) {
         event.preventDefault();
       }
 
-      const rect = this.canvas.getBoundingClientRect();
-      const position = event.changedTouches && event.changedTouches[0] || event;
-      let x = position.offsetX;
-      let y = position.offsetY;
+      const position = event;
+      const x = position.offsetX;
+      const y = position.offsetY;
 
-      if (typeof x === 'undefined') {
-        x = position.clientX - rect.left;
-      }
-      if (typeof y === 'undefined') {
-        y = position.clientY - rect.top;
-      }
-
-      const { mouse } = this;
+      const { pointer } = this;
       // draw if we should draw
-      if (mouse.down && PathDrawingModes.includes(this.mode)) {
-        const { x: newX, y: newY } = this.draw(x, y, mouse.previous.x, mouse.previous.y);
+      if (pointer.down && PathDrawingModes.includes(this.mode)) {
+        const { x: newX, y: newY } = this.draw(x, y, pointer.previous.x, pointer.previous.y);
 
-        if (!this._dirty && this.mode === DrawingMode.DRAW && (x !== mouse.x || y !== mouse.y)) {
+        if (!this._dirty && this.mode === DrawingMode.DRAW && (x !== pointer.x || y !== pointer.y)) {
           this._dirty = true;
           this.fireDirty();
         }
 
-        mouse.set(x, y);
-        mouse.previous.set(newX, newY);
+        pointer.set(x, y);
+        pointer.previous.set(newX, newY);
       }
       else {
-        mouse.set(x, y);
+        pointer.set(x, y);
       }
     };
 
-    // mousedown handler
-    const mouseDown = (event) => {
+    // pointerdown handler
+    const pointerDown = (event) => {
       if (event.cancelable) {
         event.preventDefault();
       }
       // update position just in case
-      mouseMove(event);
+      pointerMove(event);
 
       // if colour picker is selected - run picker function and return
       if (this.mode === DrawingMode.PICKER) {
@@ -90,54 +82,48 @@ module.exports = class Atrament extends AtramentEventTarget {
         return;
       }
       // remember it
-      const { mouse } = this;
-      mouse.previous.set(mouse.x, mouse.y);
-      mouse.down = true;
+      const { pointer } = this;
+      pointer.previous.set(pointer.x, pointer.y);
+      pointer.down = true;
 
-      this.beginStroke(mouse.previous.x, mouse.previous.y);
+      this.beginStroke(pointer.previous.x, pointer.previous.y);
     };
 
-    const mouseUp = (e) => {
+    const pointerUp = (e) => {
       if (this.mode === DrawingMode.FILL) {
         return;
       }
 
-      const { mouse } = this;
+      const { pointer } = this;
 
-      if (!mouse.down) {
+      if (!pointer.down) {
         return;
       }
 
-      const position = e.changedTouches && e.changedTouches[0] || e;
+      const position = e;
       const x = position.offsetX;
       const y = position.offsetY;
-      mouse.down = false;
+      pointer.down = false;
 
-      if (mouse.x === x && mouse.y === y && PathDrawingModes.includes(this.mode)) {
-        const { x: nx, y: ny } = this.draw(mouse.x, mouse.y, mouse.previous.x, mouse.previous.y);
-        mouse.previous.set(nx, ny);
+      if (pointer.x === x && pointer.y === y && PathDrawingModes.includes(this.mode)) {
+        const { x: nx, y: ny } = this.draw(pointer.x, pointer.y, pointer.previous.x, pointer.previous.y);
+        pointer.previous.set(nx, ny);
       }
 
-      this.endStroke(mouse.x, mouse.y);
+      this.endStroke(pointer.x, pointer.y);
     };
 
     // attach listeners
-    this.canvas.addEventListener('mousemove', mouseMove);
-    this.canvas.addEventListener('mousedown', mouseDown);
-    document.addEventListener('mouseup', mouseUp);
-    this.canvas.addEventListener('touchstart', mouseDown);
-    this.canvas.addEventListener('touchend', mouseUp);
-    this.canvas.addEventListener('touchmove', mouseMove);
+    this.canvas.addEventListener('pointermove', pointerMove);
+    this.canvas.addEventListener('pointerdown', pointerDown);
+    document.addEventListener('pointerup', pointerUp);
 
     // helper for destroying Atrament (removing event listeners)
     this.destroy = () => {
       this.clear();
-      this.canvas.removeEventListener('mousemove', mouseMove);
-      this.canvas.removeEventListener('mousedown', mouseDown);
-      document.removeEventListener('mouseup', mouseUp);
-      this.canvas.removeEventListener('touchstart', mouseDown);
-      this.canvas.removeEventListener('touchend', mouseUp);
-      this.canvas.removeEventListener('touchmove', mouseMove);
+      this.canvas.removeEventListener('pointermove', pointerMove);
+      this.canvas.removeEventListener('pointerdown', pointerDown);
+      document.removeEventListener('pointerup', pointerUp);
     };
 
     // set internal canvas params
@@ -236,7 +222,7 @@ module.exports = class Atrament extends AtramentEventTarget {
     const rawDist = Pixels.lineDistance(x, y, prevX, prevY);
 
     // now, here we scale the initial smoothing factor by the raw distance
-    // this means that when the mouse moves fast, there is more smoothing
+    // this means that when the pointer moves fast, there is more smoothing
     // and when we're drawing small detailed stuff, we have more control
     // also we hard clip at 1
     const smoothingFactor = Math.min(Constants.minSmoothingFactor, this.smoothing + (rawDist - 60) / 3000);
@@ -355,10 +341,10 @@ module.exports = class Atrament extends AtramentEventTarget {
   }
 
   picker() {
-    const { mouse } = this;
+    const { pointer } = this;
     const { context } = this;
-    // find the colour at the mouse's position and convert to a string in rgba() format
-    const pickerColor = `rgba(${context.getImageData(mouse.x, mouse.y, 1, 1).data.toString()})`;
+    // find the colour at the pointer's position and convert to a string in rgba() format
+    const pickerColor = `rgba(${context.getImageData(pointer.x, pointer.y, 1, 1).data.toString()})`;
     // only change colour if new colour is not transparent
     if (pickerColor.slice(-4, -1) === '255') {
       // set current color to picked color
@@ -369,21 +355,21 @@ module.exports = class Atrament extends AtramentEventTarget {
   }
 
   fill() {
-    const { mouse } = this;
+    const { pointer } = this;
     const { context } = this;
     // converting to Array because Safari 9
-    const startColor = Array.from(context.getImageData(mouse.x, mouse.y, 1, 1).data);
+    const startColor = Array.from(context.getImageData(pointer.x, pointer.y, 1, 1).data);
 
     if (!this._filling) {
-      const { x, y } = mouse;
+      const { x, y } = pointer;
       this.dispatchEvent('fillstart', { x, y });
       this._filling = true;
-      setTimeout(() => { this._floodFill(mouse.x, mouse.y, startColor); }, Constants.floodFillInterval);
+      setTimeout(() => { this._floodFill(pointer.x, pointer.y, startColor); }, Constants.floodFillInterval);
     }
     else {
       this._fillStack.push([
-        mouse.x,
-        mouse.y,
+        pointer.x,
+        pointer.y,
         startColor
       ]);
     }
