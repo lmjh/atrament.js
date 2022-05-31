@@ -359,10 +359,13 @@ module.exports = class Atrament extends AtramentEventTarget {
     const { context } = this;
     // find the colour at the mouse's position and convert to a string in rgba() format
     const pickerColor = `rgba(${context.getImageData(mouse.x, mouse.y, 1, 1).data.toString()})`;
-    // set current color to picked color
-    this.color = pickerColor;
-    // dispatch an event containing the selected color
-    this.dispatchEvent('colorpicked', { color: pickerColor });
+    // only change colour if new colour is not transparent
+    if (pickerColor.slice(-4, -1) === '255') {
+      // set current color to picked color
+      this.color = pickerColor;
+      // dispatch an event containing the selected color
+      this.dispatchEvent('colorpicked', { color: pickerColor });
+    }
   }
 
   fill() {
