@@ -236,8 +236,7 @@ module.exports = class Atrament extends AtramentEventTarget {
 
     if (this.adaptiveStroke) {
       // calculate target thickness based on the new distance
-      this._targetThickness = (dist - Constants.minLineThickness)
-        / Constants.lineThicknessRange * (this._maxWeight - this._weight) + this._weight;
+      this._targetThickness = (dist - Constants.minLineThickness) / Constants.lineThicknessRange * (this._maxWeight - this._weight) + this._weight;
       // approach the target gradually
       if (this._thickness > this._targetThickness) {
         this._thickness -= Constants.thicknessIncrement;
